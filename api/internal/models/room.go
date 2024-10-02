@@ -12,4 +12,6 @@ type Room struct {
 	Moves   []string
 	Mux     sync.Mutex
 	Turn    *Player
+
+	GameEnded bool
 }
