@@ -253,24 +253,24 @@ const handleMove = () => {
                     <span class="block mb-4 font-semibold text-gray-800 text-xl">
                         You guessed
                         <span v-if="guessedCorrecly" class="text-green-500 transition duration-300"
-                            :class="revealScore ? 'blur-0' : 'blur-xl'">correctly!</span>
+                            :class="revealScore ? 'blur-0' : 'blur-lg'">correctly!</span>
                         <span v-else class="text-red-500 transition duration-300"
-                            :class="revealScore ? 'blur-0' : 'blur-xl'">incorrectly!</span>
+                            :class="revealScore ? 'blur-0' : 'blur-lg'">incorrectly!</span>
                     </span>
                     <span class="block mb-2 font-light text-gray-700/50 text-xs" v-if="isAI">
                         You played versus <span class="transition duration-300"
-                            :class="revealExplanation ? 'blur-0' : 'blur-xl'"><span class="font-bold">{{ aiEngine }}</span>
+                            :class="revealExplanation ? 'blur-0' : 'blur-lg'"><span class="font-bold">{{ aiEngine }}</span>
                             with ELO of <span class="font-bold">{{ aiRank }}</span></span>
                     </span>
                     <span class="block mb-2 font-light text-gray-700/50 text-xs transition duration-300"
-                        :class="revealExplanation ? 'blur-0' : 'blur-xl'" v-else>
+                        :class="revealExplanation ? 'blur-0' : 'blur-lg'" v-else>
                         You played versus <span class="transition duration-300"
-                            :class="revealExplanation ? 'blur-0' : 'blur-xl'">another human being.</span>
+                            :class="revealExplanation ? 'blur-0' : 'blur-lg'">another human being.</span>
                     </span>
                         <div class="flex flex-col">
                             <button @click="tryAgain" class="bg-green-700 text-white py-2 px-6 rounded">Try Again</button>
                             <span class="block mt-2 font-light text-gray-700/50 text-xs transition duration-300"
-                                :class="revealScore ? 'blur-0' : 'blur-xl'">
+                                :class="revealScore ? 'blur-0' : 'blur-lg'">
                                 You have already guessed correctly <span class="font-bold">{{ persistentCorrect }}/{{
                                     persistentTotal }}</span> times.
                             </span>
@@ -279,5 +279,5 @@ const handleMove = () => {
             </div>
         </div>
 
-    <div class="blur-xl"></div>
+    <div class="blur-lg"></div>
 </div></template>
