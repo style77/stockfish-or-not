@@ -19,3 +19,15 @@ func SafelyNotifyPlayer(player *models.Player, data map[string]interface{}) erro
 
 	return nil
 }
+
+func NotifyBothPlayers(room *models.Room, message map[string]interface{}) error {
+	if err := SafelyNotifyPlayer(room.Player1, message); err != nil {
+		// log.Println("Error notifying player 1:", err)
+	}
+
+	if err := SafelyNotifyPlayer(room.Player2, message); err != nil {
+		// log.Println("Error notifying player 2:", err)
+	}
+
+	return nil
+}
