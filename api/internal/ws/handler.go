@@ -21,6 +21,7 @@ func HandleConnections(w http.ResponseWriter, r *http.Request, app *internal.App
 		log.Println("Error upgrading to websocket:", err)
 		return
 	}
+	defer conn.Close()
 
 	player := &models.Player{Conn: conn, IsAI: false}
 
@@ -36,9 +37,7 @@ func HandleConnections(w http.ResponseWriter, r *http.Request, app *internal.App
 
 		log.Println("Received message:", msg)
 		if move, ok := msg["move"].(string); ok {
-			app.ProcessMove(player, move, msg["isFirstMove"].(bool))
+			go app.ProcessMove(player, move, msg["isFirstMove"].(bool))
 		}
 	}
-
-	player.Conn.Close()
 }
