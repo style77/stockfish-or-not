@@ -14,7 +14,7 @@ func SafelyNotifyPlayer(player *models.Player, data map[string]interface{}) erro
 		}
 		return err
 	} else {
-		log.Println("Player has no connection.")
+		// log.Println("Player has no connection.")
 	}
 
 	return nil

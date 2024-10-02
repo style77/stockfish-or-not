@@ -46,13 +46,11 @@ func (t *Timer) StartTimer() {
 		for {
 			t.mux.Lock()
 			if t.IsOver {
-				log.Println("Timer is over")
 				t.mux.Unlock()
 				break
 			}
 
 			if t.IsPaused {
-				log.Println("Timer is paused")
 				t.mux.Unlock()
 				time.Sleep(100 * time.Millisecond)
 				continue
