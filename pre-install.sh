@@ -98,23 +98,6 @@ download_stockfish() {
     rm -rf stockfish_folder stockfish_package
 }
 
-move_to_api() {
-    api_dir="./api"
-
-    if [[ ! -d "$api_dir" ]]; then
-        echo "API directory $api_dir does not exist."
-        exit 1
-    fi
-
-    mv stockfish "$api_dir" || {
-        echo "Failed to move Stockfish to $api_dir."
-        exit 1
-    }
-
-    echo "Stockfish binary successfully moved to $api_dir"
-}
-
 mkdir -p stockfish_folder
 
 download_stockfish
-move_to_api
