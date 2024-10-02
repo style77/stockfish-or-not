@@ -381,9 +381,21 @@ func (app *App) ProcessMove(player *models.Player, move string, isFirstMove bool
 		log.Println("Error notifying opponent about move:", err)
 	}
 
+	if room.GameEnded {
+		log.Println("Game has already ended in room:", room.ID)
+		return
+	}
+
 	room.Mux.Lock()
 	room.Moves = append(room.Moves, move)
 	room.Mux.Unlock()
+
+	result, gameEnded := utils.CheckEndGameStates(room.Moves)
+
+	if gameEnded {
+		game.HandleGameEnd(player, room, result.OutcomeReason, result)
+		return
+	}
 
 	game.ChangeTurn(room)
 
@@ -427,9 +439,21 @@ func processAIMove(room *models.Room, aiPlayer *models.Player) {
 		return
 	}
 
+	if room.GameEnded {
+		log.Println("Game has already ended in room:", room.ID)
+		return
+	}
+
 	room.Mux.Lock()
 	room.Moves = append(room.Moves, aiMove)
 	room.Mux.Unlock()
+
+	result, gameEnded := utils.CheckEndGameStates(room.Moves)
+
+	if gameEnded {
+		game.HandleGameEnd(aiPlayer, room, result.OutcomeReason, result)
+		return
+	}
 
 	game.ChangeTurn(room)
 }

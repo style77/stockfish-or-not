@@ -21,10 +21,13 @@ type GameResult struct {
 }
 
 func CheckEndGameStates(moves []string) (*GameResult, bool) {
-	board := chess.NewGame()
+	board := chess.NewGame(chess.UseNotation(chess.UCINotation{}))
 
 	for _, move := range moves {
-		board.MoveStr(move)
+		if err := board.MoveStr(move); err != nil {
+			log.Printf("Error applying move %s: %v", move, err)
+			continue
+		}
 	}
 
 	gameEnded := board.Outcome() != chess.NoOutcome
@@ -33,11 +36,6 @@ func CheckEndGameStates(moves []string) (*GameResult, bool) {
 		Outcome:       board.Outcome(),
 		OutcomeReason: board.Method().String(),
 	}
-
-	log.Println("Game ended with outcome: ", result.Outcome, " Reason: ", result.OutcomeReason)
-	log.Println(gameEnded)
-
-	log.Println(board.String())
 
 	return &result, gameEnded
 }
