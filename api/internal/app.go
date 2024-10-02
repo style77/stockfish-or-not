@@ -7,10 +7,12 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/notnil/chess"
 	"github.com/style77/stockfish-or-not/internal/constants"
 	"github.com/style77/stockfish-or-not/internal/engine"
 	"github.com/style77/stockfish-or-not/internal/game"
 	"github.com/style77/stockfish-or-not/internal/models"
+	"github.com/style77/stockfish-or-not/internal/timer"
 	"github.com/style77/stockfish-or-not/internal/utils"
 )
 
@@ -39,11 +41,12 @@ func (app *App) createRoom(player1, player2 *models.Player, isAI bool) *models.R
 	roomID := uuid.New().String()
 
 	room := &models.Room{
-		ID:      roomID,
-		Player1: player1,
-		Player2: player2,
-		IsAI:    isAI,
-		Moves:   make([]string, 0),
+		ID:        roomID,
+		Player1:   player1,
+		Player2:   player2,
+		IsAI:      isAI,
+		Moves:     make([]string, 0),
+		GameEnded: false,
 	}
 
 	player1.Room = room
@@ -72,6 +75,22 @@ func getOpponentColor(playerColor string) string {
 	return "white"
 }
 
+func notifyPlayersAboutTime(room *models.Room, color string, remainingTime int) {
+	err := utils.NotifyBothPlayers(room, map[string]interface{}{
+		"message": "Time left for " + color,
+		"roomID":  room.ID,
+		"state":   80,
+		"data": map[string]interface{}{
+			"time":  remainingTime,
+			"color": color,
+		},
+	})
+
+	if err != nil {
+		log.Println("Error notifying players about time:", err)
+	}
+}
+
 func (app *App) HandleAIOpponent(player *models.Player) {
 	selectedEngine := "stockfish"
 
@@ -79,7 +98,51 @@ func (app *App) HandleAIOpponent(player *models.Player) {
 
 	aiOpponent := &models.Player{IsAI: true, Rank: &elo, Engine: &selectedEngine, AI: manager}
 	room := app.createRoom(player, aiOpponent, true)
+
 	playerColor := getPlayerColor()
+	opponentColor := getOpponentColor(playerColor)
+
+	player.Color = &playerColor
+	aiOpponent.Color = &opponentColor
+
+	aiOpponent.Timer = timer.NewTimer(constants.GameTime, func(remainingTime int) {
+		notifyPlayersAboutTime(room, opponentColor, remainingTime)
+
+		if remainingTime == 0 {
+			var outcome chess.Outcome
+
+			// aiOpponent timer is up, so player wins
+			if playerColor == "white" {
+				outcome = chess.WhiteWon
+			} else {
+				outcome = chess.BlackWon
+			}
+
+			game.HandleGameEnd(aiOpponent, room, "Time is up", &utils.GameResult{
+				Outcome:       outcome,
+				OutcomeReason: "Time is up",
+			})
+		}
+	})
+	player.Timer = timer.NewTimer(constants.GameTime, func(remainingTime int) {
+		notifyPlayersAboutTime(room, playerColor, remainingTime)
+
+		if remainingTime == 0 {
+			var outcome chess.Outcome
+
+			// player timer is up, so aiOpponent wins
+			if playerColor == "white" {
+				outcome = chess.BlackWon
+			} else {
+				outcome = chess.WhiteWon
+			}
+
+			game.HandleGameEnd(player, room, "Time is up", &utils.GameResult{
+				Outcome:       outcome,
+				OutcomeReason: "Time is up",
+			})
+		}
+	})
 
 	setRoomTurn(room, playerColor, player, aiOpponent)
 
@@ -203,8 +266,50 @@ func waitForRealPlayer(player *models.Player, app *App) {
 				player1Color := getPlayerColor()
 				player2Color := getOpponentColor(player1Color)
 
+				player.Color = &player1Color
+				opponent.Color = &player2Color
+
 				room := app.createRoom(player, opponent, false)
 				setRoomTurn(room, player1Color, player, opponent)
+
+				player.Timer = timer.NewTimer(constants.GameTime, func(remainingTime int) {
+					notifyPlayersAboutTime(room, player1Color, remainingTime)
+
+					if remainingTime == 0 {
+						var outcome chess.Outcome
+
+						// player timer is up, so opponent wins
+						if player1Color == "white" {
+							outcome = chess.BlackWon
+						} else {
+							outcome = chess.WhiteWon
+						}
+
+						game.HandleGameEnd(player, room, "Time is up", &utils.GameResult{
+							Outcome:       outcome,
+							OutcomeReason: "Time is up",
+						})
+					}
+				})
+				opponent.Timer = timer.NewTimer(constants.GameTime, func(remainingTime int) {
+					notifyPlayersAboutTime(room, player2Color, remainingTime)
+
+					if remainingTime == 0 {
+						var outcome chess.Outcome
+
+						// opponent timer is up, so player wins
+						if player1Color == "white" {
+							outcome = chess.WhiteWon
+						} else {
+							outcome = chess.BlackWon
+						}
+
+						game.HandleGameEnd(opponent, room, "Time is up", &utils.GameResult{
+							Outcome:       outcome,
+							OutcomeReason: "Time is up",
+						})
+					}
+				})
 
 				player.Conn.WriteJSON(map[string]interface{}{
 					"message": "You have been matched with a player! You are playing as " + player1Color,
@@ -280,16 +385,12 @@ func (app *App) ProcessMove(player *models.Player, move string, isFirstMove bool
 	room.Moves = append(room.Moves, move)
 	room.Mux.Unlock()
 
-	utils.ChangeTurn(room)
+	game.ChangeTurn(room)
 
 	if room.IsAI && opponent.AI != nil {
 		go func() {
 			processAIMove(room, opponent)
 		}()
-	}
-
-	if isFirstMove {
-		game.StartTimer(room)
 	}
 }
 
@@ -313,7 +414,7 @@ func processAIMove(room *models.Room, aiPlayer *models.Player) {
 	}
 
 	err = utils.SafelyNotifyPlayer(humanPlayer, map[string]interface{}{
-		"message": "AI made move",
+		"message": "Opponent made move",
 		"roomID":  room.ID,
 		"state":   78,
 		"data": map[string]interface{}{
@@ -330,5 +431,5 @@ func processAIMove(room *models.Room, aiPlayer *models.Player) {
 	room.Moves = append(room.Moves, aiMove)
 	room.Mux.Unlock()
 
-	utils.ChangeTurn(room)
+	game.ChangeTurn(room)
 }
