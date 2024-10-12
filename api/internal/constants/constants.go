@@ -1,7 +1,7 @@
 package constants
 
 const (
-	AIPlayerPosibility             = 0
+	AIPlayerPosibility             = 0.5
 	PlayerLookingIntervalRangeFrom = 4
 	PlayerLookingIntervalRangeTo   = 10
 	TimeoutForOpponent             = 7
@@ -9,6 +9,6 @@ const (
 	MaxDepth                       = 10
 
 	// AI
-	AIMoveWaitTimeFrom = 1
-	AIMoveWaitTimeTo   = 6
+	AIMoveWaitTimeFrom = 4
+	AIMoveWaitTimeTo   = 20
 )
